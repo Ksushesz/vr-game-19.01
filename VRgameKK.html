@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VR Мини-игра "Сбор объектов" - Рогожная Ксения и Ошер Ксения, группа 09.07.13п2</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@4.2.1/dist/aframe-event-set-component.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #4CAF50;
+        }
+        
+        #hud h2 {
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+        
+        #hud div {
+            margin: 5px 0;
+            font-size: 18px;
+        }
+        
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1001;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            border: 3px solid #FF5722;
+            width: 80%;
+            max-width: 500px;
+        }
+        
+        #game-over h2 {
+            color: #FF5722;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+        
+        #game-over p {
+            margin: 15px 0;
+            font-size: 20px;
+        }
+        
+        #restart-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        
+        #restart-btn:hover {
+            background: #45a049;
+        }
+        
+        #player-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- HUD интерфейс -->
+    <div id="hud">
+        <h2>VR Игра: Сбор объектов</h2>
+        <div id="score">Счёт: 0</div>
+        <div id="timer">Время: 60</div>
+        <div id="objects-left">Осталось объектов: 10</div>
+        <div>Студент: Ошер и Рогожная, группа 09.07.13п2</div>
+    </div>
+    
+    <!-- Экран завершения игры -->
+    <div id="game-over">
+        <h2>Игра завершена!</h2>
+        <p id="final-score">Финальный счёт: 0</p>
+        <p id="result-message"></p>
+        <button id="restart-btn">Играть снова</button>
+    </div>
+    
+    <!-- Информация об управлении -->
+    <div id="player-info">
+        Управление: WASD - перемещение, мышь - вращение
+    </div>
+    
+    <!-- A-Frame сцена -->
+    <a-scene>
+        <!-- Освещение -->
+        <a-light type="ambient" color="#FFFFFF" intensity="0.6"></a-light>
+        <a-light type="point" position="5 8 5" intensity="0.8" color="#FFFFFF"></a-light>
+        <a-light type="point" position="-5 6 3" intensity="0.5" color="#FFDD55"></a-light>
+        
+        <!-- Небо -->
+        <a-sky color="#87CEEB"></a-sky>
+        
+        <!-- Пол с текстурой -->
+        <a-entity id="ground" geometry="primitive: plane; width: 40; height: 40" 
+                  position="0 0 0" rotation="-90 0 0" 
+                  material="color: #228B22; src: https://cdn.aframe.io/a-painter/images/floor.jpg; repeat: 8 8">
+        </a-entity>
+        
+        <!-- Камера игрока -->
+        <a-entity id="player" 
+                  position="0 1.6 5"
+                  movement-controls="speed: 0.1"
+                  wasd-controls="enabled: true">
+            <a-camera id="camera" look-controls="enabled: true">
+                <a-cursor></a-cursor>
+            </a-camera>
+        </a-entity>
+        
+        <!-- Объекты для сбора -->
+        <!-- Группа объектов 1 -->
+        <a-box id="collectible-1" class="collectible"
+               position="-5 1 -5" 
+               width="1" height="1" depth="1"
+               color="#FF5722"
+               animation="property: rotation; to: 0 360 0; dur: 3000; loop: true; easing: linear">
+        </a-box>
+        
+        <a-sphere id="collectible-2" class="collectible"
+                  position="5 1 -5" 
+                  radius="0.7"
+                  color="#4CAF50"
+                  animation="property: position.y; to: 2.5; dir: alternate; dur: 2000; loop: true">
+        </a-sphere>
+        
+        <a-cylinder id="collectible-3" class="collectible"
+                    position="-5 1 5" 
+                    radius="0.5" height="1.5"
+                    color="#2196F3"
+                    animation="property: rotation; to: 360 0 0; dur: 4000; loop: true">
+        </a-cylinder>
+        
+        <a-cone id="collectible-4" class="collectible"
+                position="5 1 5" 
+                radius-bottom="0.8" height="2"
+                color="#9C27B0"
+                animation="property: rotation.y; to: 360; dur: 3500; loop: true">
+        </a-cone>
+        
+        <!-- Группа объектов 2 -->
+        <a-torus id="collectible-5" class="collectible"
+                 position="-8 1.5 0" 
+                 radius="1" radius-tubular="0.2"
+                 color="#FF9800"
+                 animation="property: rotation; to: 0 360 360; dur: 5000; loop: true">
+        </a-torus>
+        
+        <a-octahedron id="collectible-6" class="collectible"
+                      position="8 1.5 0" 
+                      radius="0.8"
+                      color="#00BCD4"
+                      animation="property: rotation; to: 360 360 0; dur: 4500; loop: true">
+        </a-octahedron>
+        
+        <a-dodecahedron id="collectible-7" class="collectible"
+                        position="0 1.5 -8" 
+                        radius="0.9"
+                        color="#E91E63"
+                        animation="property: scale; to: 1.5 1.5 1.5; dir: alternate; dur: 3000; loop: true">
+        </a-dodecahedron>
+        
+        <a-tetrahedron id="collectible-8" class="collectible"
+                       position="0 1.5 8" 
+                       radius="1"
+                       color="#8BC34A"
+                       animation="property: position.y; to: 3; dir: alternate; dur: 2500; loop: true">
+        </a-tetrahedron>
+        
+        <!-- Группа объектов 3 -->
+        <a-ring id="collectible-9" class="collectible"
+                position="-10 1 -10" 
+                radius-inner="0.3" radius-outer="0.8"
+                color="#795548"
+                animation="property: rotation; to: 360 0 360; dur: 4000; loop: true">
+        </a-ring>
+        
+        <a-box id="collectible-10" class="collectible"
+               position="10 1 -10" 
+               width="1.2" height="1.2" depth="1.2"
+               color="#607D8B"
+               animation="property: rotation; to: 45 45 45; dur: 3200; loop: true">
+        </a-box>
+        
+        <!-- Текст счёта в сцене -->
+        <a-text id="score-text" value="Счёт: 0" 
+                position="0 5 -5" 
+                align="center" 
+                color="#FFFFFF" 
+                width="10">
+        </a-text>
+        
+        <!-- 3D модель (GLTF) - дерево -->
+        <a-entity id="tree-model"
+                  position="15 0 -15"
+                  scale="2 2 2"
+                  gltf-model="https://cdn.aframe.io/test-models/models/glTF-2.0/virtualcity/VC.gltf">
+        </a-entity>
+        
+        <!-- Декоративные объекты -->
+        <a-box position="-15 0.5 -15" width="2" height="1" depth="2" color="#795548"></a-box>
+        <a-box position="15 0.5 15" width="2" height="1" depth="2" color="#795548"></a-box>
+        <a-sphere position="-15 2 15" radius="1.5" color="#FFC107"></a-sphere>
+        
+        <!-- Звуки -->
+        <a-sound id="collect-sound"
+                 src="https://cdn.aframe.io/360-image-gallery-boilerplate/audio/click.ogg"
+                 autoplay="false">
+        </a-sound>
+        
+        <a-sound id="bg-music"
+                 src="https://cdn.aframe.io/basic-guide/audio/backgroundnoise.wav"
+                 autoplay="true"
+                 loop="true"
+                 volume="0.3">
+        </a-sound>
+    </a-scene>
+    
+    <script>
+        // Переменные игры
+        let score = 0;
+        let timeLeft = 60;
+        let gameActive = true;
+        let totalObjects = 10;
+        let collectedObjects = 0;
+        let timerInterval;
+        
+        // Элементы DOM
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        const objectsLeftElement = document.getElementById('objects-left');
+        const gameOverElement = document.getElementById('game-over');
+        const finalScoreElement = document.getElementById('final-score');
+        const resultMessageElement = document.getElementById('result-message');
+        const restartButton = document.getElementById('restart-btn');
+        const scoreText = document.querySelector('#score-text');
+        
+        // Инициализация игры
+        function initGame() {
+            score = 0;
+            timeLeft = 60;
+            gameActive = true;
+            collectedObjects = 0;
+            
+            updateHUD();
+            showAllCollectibles();
+            gameOverElement.style.display = 'none';
+            
+            // Запуск таймера
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+        
+        // Обновление HUD
+        function updateHUD() {
+            scoreElement.textContent = `Счёт: ${score}`;
+            timerElement.textContent = `Время: ${timeLeft}`;
+            objectsLeftElement.textContent = `Осталось объектов: ${totalObjects - collectedObjects}`;
+            scoreText.setAttribute('value', `Счёт: ${score}`);
+        }
+        
+        // Обновление таймера
+        function updateTimer() {
+            if (!gameActive) return;
+            
+            timeLeft--;
+            timerElement.textContent = `Время: ${timeLeft}`;
+            
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+        
+        // Показать все собираемые объекты
+        function showAllCollectibles() {
+            const collectibles = document.querySelectorAll('.collectible');
+            collectibles.forEach(obj => {
+                obj.setAttribute('visible', 'true');
+            });
+        }
+        
+        // Компонент для сбора объектов
+        AFRAME.registerComponent('collectible', {
+            init: function() {
+                this.el.addEventListener('click', () => {
+                    if (!gameActive) return;
+                    
+                    // Сбор объекта
+                    this.el.setAttribute('visible', 'false');
+                    score += 10;
+                    collectedObjects++;
+                    
+                    // Воспроизведение звука
+                    const sound = document.querySelector('#collect-sound');
+                    sound.components.sound.playSound();
+                    
+                    updateHUD();
+                    
+                    // Проверка на победу
+                    if (collectedObjects >= totalObjects) {
+                        setTimeout(() => {
+                            endGame(true);
+                        }, 500);
+                    }
+                });
+            }
+        });
+        
+        // Система для отслеживания столкновений
+        AFRAME.registerSystem('collision-system', {
+            init: function() {
+                this.player = document.querySelector('#player');
+                this.collectibles = document.querySelectorAll('.collectible');
+                
+                this.tick = this.tick.bind(this);
+            },
+            
+            tick: function() {
+                if (!gameActive) return;
+                
+                const playerPos = this.player.getAttribute('position');
+                this.collectibles.forEach((collectible, index) => {
+                    if (collectible.getAttribute('visible') === 'false') return;
+                    
+                    const objPos = collectible.getAttribute('position');
+                    const distance = Math.sqrt(
+                        Math.pow(playerPos.x - objPos.x, 2) +
+                        Math.pow(playerPos.y - objPos.y, 2) +
+                        Math.pow(playerPos.z - objPos.z, 2)
+                    );
+                    
+                    // Автоматический сбор при близком расстоянии
+                    if (distance < 1.5) {
+                        collectible.setAttribute('visible', 'false');
+                        score += 10;
+                        collectedObjects++;
+                        
+                        const sound = document.querySelector('#collect-sound');
+                        sound.components.sound.playSound();
+                        
+                        updateHUD();
+                        
+                        if (collectedObjects >= totalObjects) {
+                            setTimeout(() => {
+                                endGame(true);
+                            }, 500);
+                        }
+                    }
+                });
+            }
+        });
+        
+        // Завершение игры
+        function endGame(isWin = false) {
+            gameActive = false;
+            clearInterval(timerInterval);
+            
+            // Показать экран завершения
+            gameOverElement.style.display = 'block';
+            finalScoreElement.textContent = `Финальный счёт: ${score}`;
+            
+            if (isWin) {
+                resultMessageElement.textContent = 'Поздравляем! Вы собрали все объекты!';
+                resultMessageElement.style.color = '#4CAF50';
+            } else if (timeLeft <= 0) {
+                resultMessageElement.textContent = 'Время вышло! Попробуйте ещё раз.';
+                resultMessageElement.style.color = '#FF5722';
+            } else {
+                resultMessageElement.textContent = 'Игра завершена!';
+                resultMessageElement.style.color = '#FFC107';
+            }
+        }
+        
+        // Кнопка перезапуска
+        restartButton.addEventListener('click', initGame);
+        
+        // Инициализация при загрузке
+        window.addEventListener('load', () => {
+            // Применяем компонент collectible ко всем объектам
+            const collectibles = document.querySelectorAll('.collectible');
+            collectibles.forEach(obj => {
+                obj.setAttribute('collectible', '');
+            });
+            
+            initGame();
+            
+            // Добавляем подсказки в консоль
+            console.log('=== VR Игра "Сбор объектов" ===');
+            console.log('Разработчик: Соломенный Ю.Ю., группа ХТ-21');
+            console.log('Цель: Собрать все 10 объектов за 60 секунд');
+            console.log('Управление: WASD - перемещение, мышь - вращение');
+            console.log('Нажмите на объект или подойдите близко для сбора');
+        });
+    </script>
+</body>
+</html>

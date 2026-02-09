@@ -1,0 +1,20 @@
+{
+  "name": "vr-collect-game",
+  "version": "1.0.0",
+  "description": "VR мини-игра 'Сбор объектов' для практической работы",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "vr",
+    "aframe",
+    "game",
+    "education",
+    "threejs"
+  ],
+  "author": "Рогожная Ксения и Ошер Ксения",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
